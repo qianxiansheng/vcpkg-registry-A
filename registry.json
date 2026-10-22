@@ -1,0 +1,5 @@
+{
+  "name": "a-registry",
+  "kind": "filesystem",
+  "packages": ["mylib"]
+}
