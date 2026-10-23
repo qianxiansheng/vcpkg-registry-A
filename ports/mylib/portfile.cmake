@@ -3,8 +3,8 @@
 vcpkg_from_git(
     OUT_SOURCE_PATH SOURCE_PATH
     URL https://github.com/qianxiansheng/vcpkg-mylib-repo.git
-    REF c8d2f1ecaf090256d9ee28f8e72aeec41df94d70
-    HEAD_REF main
+    REF 4fbf658011f695d0f6c57553d1aeb3750855f0d1
+    HEAD_REF master
 )
 
 vcpkg_cmake_configure(
