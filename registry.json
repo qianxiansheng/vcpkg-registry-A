@@ -1,5 +1,5 @@
 {
   "name": "a-registry",
   "kind": "filesystem",
-  "packages": ["mylib"]
+  "packages": ["mylib","serial"]
 }
