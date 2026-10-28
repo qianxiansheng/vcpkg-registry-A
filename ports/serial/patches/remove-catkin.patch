@@ -1,0 +1,171 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 4927020..493b558 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,81 +1,96 @@
+-cmake_minimum_required(VERSION 2.8.3)
+-project(serial)
++cmake_minimum_required(VERSION 3.20)
++project(serial VERSION 1.2.1 LANGUAGES CXX)
+ 
+-# Find catkin
+-find_package(catkin REQUIRED)
++include(GNUInstallDirs)
++include(CMakePackageConfigHelpers)
+ 
+-if(APPLE)
+-    find_library(IOKIT_LIBRARY IOKit)
+-    find_library(FOUNDATION_LIBRARY Foundation)
+-endif()
+-
+-if(UNIX AND NOT APPLE)
+-    # If Linux, add rt and pthread
+-    set(rt_LIBRARIES rt)
+-    set(pthread_LIBRARIES pthread)
+-    catkin_package(
+-        LIBRARIES ${PROJECT_NAME}
+-        INCLUDE_DIRS include
+-        DEPENDS rt pthread
+-    )
+-else()
+-    # Otherwise normal call
+-    catkin_package(
+-        LIBRARIES ${PROJECT_NAME}
+-        INCLUDE_DIRS include
+-    )
+-endif()
++option(SERIAL_BUILD_EXAMPLES "Build the serial examples" OFF)
++option(SERIAL_BUILD_TESTS "Build the serial tests (requires GTest and Boost)" OFF)
+ 
+ ## Sources
+ set(serial_SRCS
+     src/serial.cc
+-    include/serial/serial.h
+-    include/serial/v8stdint.h
+ )
+ if(APPLE)
+-    # If OSX
+-    list(APPEND serial_SRCS src/impl/unix.cc)
+-    list(APPEND serial_SRCS src/impl/list_ports/list_ports_osx.cc)
++    list(APPEND serial_SRCS
++        src/impl/unix.cc
++        src/impl/list_ports/list_ports_osx.cc
++    )
+ elseif(UNIX)
+-    # If unix
+-    list(APPEND serial_SRCS src/impl/unix.cc)
+-    list(APPEND serial_SRCS src/impl/list_ports/list_ports_linux.cc)
++    list(APPEND serial_SRCS
++        src/impl/unix.cc
++        src/impl/list_ports/list_ports_linux.cc
++    )
+ else()
+-    # If windows
+-    list(APPEND serial_SRCS src/impl/win.cc)
+-    list(APPEND serial_SRCS src/impl/list_ports/list_ports_win.cc)
++    list(APPEND serial_SRCS
++        src/impl/win.cc
++        src/impl/list_ports/list_ports_win.cc
++    )
+ endif()
+ 
+-## Add serial library
+-add_library(${PROJECT_NAME} ${serial_SRCS})
++## Library
++add_library(serial ${serial_SRCS})
++add_library(serial::serial ALIAS serial)
++
++target_include_directories(serial
++    PUBLIC
++        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
++        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
++)
++
+ if(APPLE)
+-    target_link_libraries(${PROJECT_NAME} ${FOUNDATION_LIBRARY} ${IOKIT_LIBRARY})
++    target_link_libraries(serial PRIVATE "-framework IOKit" "-framework Foundation")
+ elseif(UNIX)
+-    target_link_libraries(${PROJECT_NAME} rt pthread)
++    target_link_libraries(serial PRIVATE rt pthread)
+ else()
+-    target_link_libraries(${PROJECT_NAME} setupapi)
++    target_link_libraries(serial PRIVATE setupapi)
+ endif()
+ 
+-## Uncomment for example
+-add_executable(serial_example examples/serial_example.cc)
+-add_dependencies(serial_example ${PROJECT_NAME})
+-target_link_libraries(serial_example ${PROJECT_NAME})
+-
+-## Include headers
+-include_directories(include)
++# The library has no export macros, so export everything when built as a DLL
++set_target_properties(serial PROPERTIES
++    WINDOWS_EXPORT_ALL_SYMBOLS ON
++    VERSION ${PROJECT_VERSION}
++    SOVERSION ${PROJECT_VERSION_MAJOR}
++)
+ 
+-## Install executable
+-install(TARGETS ${PROJECT_NAME}
+-    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+-    RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
++## Install library
++install(TARGETS serial
++    EXPORT serialTargets
++    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+ )
+ 
+ ## Install headers
+-install(FILES include/serial/serial.h include/serial/v8stdint.h
+-  DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}/serial)
++install(DIRECTORY include/serial
++    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
++    FILES_MATCHING PATTERN "*.h"
++)
++
++## Install CMake package
++install(EXPORT serialTargets
++    FILE serialConfig.cmake
++    NAMESPACE serial::
++    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/serial
++)
++
++write_basic_package_version_file(
++    ${CMAKE_CURRENT_BINARY_DIR}/serialConfigVersion.cmake
++    VERSION ${PROJECT_VERSION}
++    COMPATIBILITY SameMajorVersion
++)
++install(FILES ${CMAKE_CURRENT_BINARY_DIR}/serialConfigVersion.cmake
++    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/serial
++)
++
++## Example
++if(SERIAL_BUILD_EXAMPLES)
++    add_executable(serial_example examples/serial_example.cc)
++    target_link_libraries(serial_example PRIVATE serial)
++endif()
+ 
+ ## Tests
+-if(CATKIN_ENABLE_TESTING)
++if(SERIAL_BUILD_TESTS)
++    enable_testing()
+     add_subdirectory(tests)
+ endif()
+diff --git a/cmake/serialConfig.cmake.in b/cmake/serialConfig.cmake.in
+new file mode 100644
+index 0000000..2881a22
+--- /dev/null
++++ b/cmake/serialConfig.cmake.in
+@@ -0,0 +1,7 @@
++@PACKAGE_INIT@
++
++# 导入 targets 文件
++include("${CMAKE_CURRENT_LIST_DIR}/serialTargets.cmake")
++
++# 检查组件
++check_required_components(serial)
+\ No newline at end of file
