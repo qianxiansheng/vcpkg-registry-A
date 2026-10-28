@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 4927020..493b558 100644
+index 4927020..e5b3013 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -1,81 +1,96 @@
@@ -34,11 +34,12 @@ index 4927020..493b558 100644
 -        INCLUDE_DIRS include
 -    )
 -endif()
-+option(SERIAL_BUILD_EXAMPLES "Build the serial examples" OFF)
-+option(SERIAL_BUILD_TESTS "Build the serial tests (requires GTest and Boost)" OFF)
++option(${PROJECT_NAME}_BUILD_EXAMPLES "Build the ${PROJECT_NAME} examples" OFF)
++option(${PROJECT_NAME}_BUILD_TESTS "Build the ${PROJECT_NAME} tests (requires GTest and Boost)" OFF)
  
  ## Sources
- set(serial_SRCS
+-set(serial_SRCS
++set(${PROJECT_NAME}_SRCS
      src/serial.cc
 -    include/serial/serial.h
 -    include/serial/v8stdint.h
@@ -47,7 +48,7 @@ index 4927020..493b558 100644
 -    # If OSX
 -    list(APPEND serial_SRCS src/impl/unix.cc)
 -    list(APPEND serial_SRCS src/impl/list_ports/list_ports_osx.cc)
-+    list(APPEND serial_SRCS
++    list(APPEND ${PROJECT_NAME}_SRCS
 +        src/impl/unix.cc
 +        src/impl/list_ports/list_ports_osx.cc
 +    )
@@ -55,7 +56,7 @@ index 4927020..493b558 100644
 -    # If unix
 -    list(APPEND serial_SRCS src/impl/unix.cc)
 -    list(APPEND serial_SRCS src/impl/list_ports/list_ports_linux.cc)
-+    list(APPEND serial_SRCS
++    list(APPEND ${PROJECT_NAME}_SRCS
 +        src/impl/unix.cc
 +        src/impl/list_ports/list_ports_linux.cc
 +    )
@@ -63,7 +64,7 @@ index 4927020..493b558 100644
 -    # If windows
 -    list(APPEND serial_SRCS src/impl/win.cc)
 -    list(APPEND serial_SRCS src/impl/list_ports/list_ports_win.cc)
-+    list(APPEND serial_SRCS
++    list(APPEND ${PROJECT_NAME}_SRCS
 +        src/impl/win.cc
 +        src/impl/list_ports/list_ports_win.cc
 +    )
@@ -72,10 +73,10 @@ index 4927020..493b558 100644
 -## Add serial library
 -add_library(${PROJECT_NAME} ${serial_SRCS})
 +## Library
-+add_library(serial ${serial_SRCS})
-+add_library(serial::serial ALIAS serial)
++add_library(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
++add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 +
-+target_include_directories(serial
++target_include_directories(${PROJECT_NAME}
 +    PUBLIC
 +        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 +        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
@@ -83,13 +84,13 @@ index 4927020..493b558 100644
 +
  if(APPLE)
 -    target_link_libraries(${PROJECT_NAME} ${FOUNDATION_LIBRARY} ${IOKIT_LIBRARY})
-+    target_link_libraries(serial PRIVATE "-framework IOKit" "-framework Foundation")
++    target_link_libraries(${PROJECT_NAME} PRIVATE "-framework IOKit" "-framework Foundation")
  elseif(UNIX)
 -    target_link_libraries(${PROJECT_NAME} rt pthread)
-+    target_link_libraries(serial PRIVATE rt pthread)
++    target_link_libraries(${PROJECT_NAME} PRIVATE rt pthread)
  else()
 -    target_link_libraries(${PROJECT_NAME} setupapi)
-+    target_link_libraries(serial PRIVATE setupapi)
++    target_link_libraries(${PROJECT_NAME} PRIVATE setupapi)
  endif()
  
 -## Uncomment for example
@@ -100,20 +101,19 @@ index 4927020..493b558 100644
 -## Include headers
 -include_directories(include)
 +# The library has no export macros, so export everything when built as a DLL
-+set_target_properties(serial PROPERTIES
++set_target_properties(${PROJECT_NAME} PROPERTIES
 +    WINDOWS_EXPORT_ALL_SYMBOLS ON
 +    VERSION ${PROJECT_VERSION}
 +    SOVERSION ${PROJECT_VERSION_MAJOR}
 +)
  
 -## Install executable
--install(TARGETS ${PROJECT_NAME}
++## Install library
+ install(TARGETS ${PROJECT_NAME}
 -    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 -    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 -    RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-+## Install library
-+install(TARGETS serial
-+    EXPORT serialTargets
++    EXPORT ${PROJECT_NAME}Targets
 +    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 +    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 +    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -128,30 +128,30 @@ index 4927020..493b558 100644
 +)
 +
 +## Install CMake package
-+install(EXPORT serialTargets
-+    FILE serialConfig.cmake
-+    NAMESPACE serial::
-+    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/serial
++install(EXPORT ${PROJECT_NAME}Targets
++    FILE ${PROJECT_NAME}Config.cmake
++    NAMESPACE ${PROJECT_NAME}::
++    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
 +)
 +
 +write_basic_package_version_file(
-+    ${CMAKE_CURRENT_BINARY_DIR}/serialConfigVersion.cmake
++    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
 +    VERSION ${PROJECT_VERSION}
 +    COMPATIBILITY SameMajorVersion
 +)
-+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/serialConfigVersion.cmake
-+    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/serial
++install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
++    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
 +)
 +
 +## Example
-+if(SERIAL_BUILD_EXAMPLES)
-+    add_executable(serial_example examples/serial_example.cc)
-+    target_link_libraries(serial_example PRIVATE serial)
++if(${PROJECT_NAME}_BUILD_EXAMPLES)
++    add_executable(${PROJECT_NAME}_example examples/serial_example.cc)
++    target_link_libraries(${PROJECT_NAME}_example PRIVATE ${PROJECT_NAME})
 +endif()
  
  ## Tests
 -if(CATKIN_ENABLE_TESTING)
-+if(SERIAL_BUILD_TESTS)
++if(${PROJECT_NAME}_BUILD_TESTS)
 +    enable_testing()
      add_subdirectory(tests)
  endif()
