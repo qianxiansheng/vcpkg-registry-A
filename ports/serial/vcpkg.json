@@ -1,6 +1,7 @@
 {
   "name": "serial",
   "version": "1.2.1",
+  "port-version": 1,
   "description": "cross-platform serial communication library",
   "dependencies": [
     {

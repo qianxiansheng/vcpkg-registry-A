@@ -12,13 +12,13 @@ vcpkg_from_git(
 vcpkg_cmake_configure(
     SOURCE_PATH ${SOURCE_PATH}
     OPTIONS
-        -DSERIAL_BUILD_EXAMPLES=OFF
-        -DSERIAL_BUILD_TESTS=OFF
+        -Dserial_BUILD_EXAMPLES=OFF
+        -Dserial_BUILD_TESTS=OFF
 )
 
 vcpkg_cmake_install()
 
-vcpkg_cmake_config_fixup(PACKAGE_NAME mylib CONFIG_PATH "lib/cmake/serial")
+vcpkg_cmake_config_fixup(CONFIG_PATH lib/cmake/serial)
 
 file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include")
 file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/share")
